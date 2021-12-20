@@ -2,6 +2,8 @@ package pk.codebase.caller;
 
 import io.crossbar.autobahn.wamp.Client;
 import io.crossbar.autobahn.wamp.Session;
+import io.crossbar.autobahn.wamp.serializers.CBORSerializer;
+import io.crossbar.autobahn.wamp.transports.NettyWebSocket;
 import io.crossbar.autobahn.wamp.types.CallResult;
 import io.crossbar.autobahn.wamp.types.ExitInfo;
 
@@ -12,17 +14,20 @@ import java.util.concurrent.Executors;
 
 public class Caller {
     public static void main(String[] args) {
-        connect();
+        String url = args[0];
+        String procedure = args[1];
+        Double requests = Double.valueOf(args[2]);
+        connect(url, procedure, requests);
     }
 
-    private static int connect() {
+    private static int connect(String url, String procedure, Double requests) {
         Session wampSession = new Session(Executors.newFixedThreadPool(1));
         double start = System.currentTimeMillis();
         wampSession.addOnJoinListener((session, details) -> {
             System.out.println("called");
             List<CompletableFuture<CallResult>> aList = new ArrayList<>();
-            for (int i = 0; i < 10000; i++) {
-                aList.add(session.call("simplethings", "arg1"));
+            for (int i = 0; i < requests; i++) {
+                aList.add(session.call(procedure, "arg1"));
             }
 
             CompletableFuture<CallResult>[] array = aList.toArray(new CompletableFuture[0]);
@@ -33,7 +38,13 @@ public class Caller {
                 System.out.println(timeElapsed / 1000);
             });
         });
-        Client client = new Client(wampSession, "ws://localhost:8080/ws", "realm1");
+
+        List<String> serializers = new ArrayList<>();
+        serializers.add(CBORSerializer.NAME);
+        NettyWebSocket webSocket = new NettyWebSocket(url, serializers);
+
+        Client client = new Client(webSocket);
+        client.add(wampSession, "realm1");
         CompletableFuture<ExitInfo> exitFuture = client.connect();
 
         try {
