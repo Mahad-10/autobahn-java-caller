@@ -14,10 +14,16 @@ import java.util.concurrent.Executors;
 
 public class Caller {
     public static void main(String[] args) {
-        String url = args[0];
-        String procedure = args[1];
-        Double requests = Double.valueOf(args[2]);
-        connect(url, procedure, requests);
+        String url = "ws://localhost:8080/ws";
+        String procedure = "com.things.echo";
+        Double num_of_requests = Double.valueOf(10000);
+        try {
+            url = args[0];
+            procedure = args[1];
+            num_of_requests = Double.valueOf(args[2]);
+        } catch(Exception e){
+        }
+        connect(url, procedure, num_of_requests);
     }
 
     private static int connect(String url, String procedure, Double requests) {
